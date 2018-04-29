@@ -1,2 +1,3 @@
-# keeper
-Keep Jenkins up-to-date all-the-time.
+# Keeper
+
+Updated Jenkins if there is a new version available
