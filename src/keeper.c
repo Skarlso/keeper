@@ -1,8 +1,20 @@
-#include "keeper.h"
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
+#include "keeper.h"
+
+int get_jenkins_version(char *version, const char *token)
+{
+    char v[] = "1.2.3";
+    if (v == NULL) {
+        fprintf(stderr, "version is empty\n");
+        return 1;
+    }
+
+    strncpy(version, v, sizeof(v));
+    return 0;
+}
 
 // Method which writes data to a given file stream
 // This is provided so this code also works on Windows.
@@ -17,13 +29,11 @@ int download_jenkins_war()
     CURL *ehndl;
     FILE *file;
     CURLcode res;
-    // Initialize curl capabilities
-    curl_global_init(CURL_GLOBAL_ALL);
 
     // Initialize an easy curl which takes care most of the things we will need
     ehndl = curl_easy_init();
     if (!ehndl) {
-        printf("Could not initialize curl.\n");
+        fprintf(stderr, "Could not initialize curl.\n");
         return 1;
     }
     printf("downloading newest jenkins war from: %s\n", JENKINS_WAR_LATEST_URL);
@@ -51,7 +61,6 @@ int download_jenkins_war()
         return 1;
     }
     curl_easy_cleanup(ehndl);
-    curl_global_cleanup();
     fclose(file);
     return 0;
 }
@@ -64,7 +73,7 @@ int update_jenkins(const char *path)
     return 0;
 }
 
-int safe_shutdown_jenkins()
+int safe_shutdown_jenkins(const char *host)
 {
     return 0;
 }
