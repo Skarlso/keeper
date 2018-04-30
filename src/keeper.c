@@ -58,7 +58,13 @@ int download_jenkins_war()
 
 // Takes the newly downloaded war file and puts it into the right location
 // defined by the environment property KEEPER_JENKINS_WAR_PATH
-int update_jenkins(const *char path)
+int update_jenkins(const char *path)
+{
+    printf("got path %s for jenkins war file.\n", path);
+    return 0;
+}
+
+int safe_shutdown_jenkins()
 {
     return 0;
 }

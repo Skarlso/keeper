@@ -10,19 +10,13 @@ int main()
     }
 
     // Download the latest file
-    // STEP(download_jenkins_war);
-    int ret = download_jenkins_war();
-    if (ret > 0)
-        return ret;
+    KEEPER_STEP("download latest jenkins war", *download_jenkins_war);
 
     // Update the war file
-    ret = update_jenkins(path);
-    if (ret > 0)
-        return ret;
+    KEEPER_STEP("updating the jenkins war file", *update_jenkins, path);
 
     // Initiate safe shutdown
-
-    // Save the current version?
+    KEEPER_STEP("safe shutdown Jenkins", *safe_shutdown_jenkins);
 
     return 0;
 }
