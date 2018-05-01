@@ -24,10 +24,15 @@ int main()
         return 1;
     }
 
-    char version[20];
+    char latest_jenkins_version[20];
     // In order to modify this variable we pass in the address of the first element of this array
-    KEEPER_STEP("get Jenkins version", *get_jenkins_version, &version[0], token);
-    printf("got version: %s\n", version);
+    KEEPER_STEP("get latest jenkins version", *get_latest_jenkins_version, &latest_jenkins_version[0]);
+    printf("got latest jenkins version: %s\n", latest_jenkins_version);
+
+    char local_jenkins_version[20];
+    // In order to modify this variable we pass in the address of the first element of this array
+    KEEPER_STEP("get local jenkins version", *get_local_jenkins_version, &local_jenkins_version[0], token, host);
+    printf("got local version: %s\n", local_jenkins_version);
 
 
     // Download the latest file

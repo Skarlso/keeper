@@ -2,6 +2,7 @@
 #define KEEPER_H
 
 #define JENKINS_WAR_LATEST_URL "https://updates.jenkins-ci.org/latest/jenkins.war"
+#define JENKINS_WAR_VERSION_URL "https://updates.jenkins-ci.org/download/war/"
 #define JENKINS_WAR_FILENAME "jenkins.war"
 #define JENKINS_WAR_PATH_ENV_NAME "KEEPER_JENKINS_WAR_PATH"
 #define JENKINS_HOST_ENV_NAME "KEEPER_JENKINS_HOST"
@@ -16,7 +17,8 @@
 
 #include <stdio.h>
 
-int get_jenkins_version(char *version, const char *token);
+int get_local_jenkins_version(char *version, const char *token, const char *host);
+int get_latest_jenkins_version(char *version);
 size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
 int download_jenkins_war();
 int update_jenkins(const char *path);

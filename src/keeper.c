@@ -4,9 +4,52 @@
 #include <curl/curl.h>
 #include "keeper.h"
 
-int get_jenkins_version(char *version, const char *token)
+int get_latest_jenkins_version(char *version)
 {
-    char v[] = "1.2.3";
+    // Parse https://updates.jenkins-ci.org/download/war/<version is ordered>/jenkins.war
+    // to get the latest version of the war file.
+}
+
+int get_local_jenkins_version(char *version, const char *token, const char *host)
+{
+    // Jenkins version is in the response header called X-Jenkins:
+    // X-Jenkins: 2.118
+    // http://localhost:8080/api/json
+    char v[] = {0};
+
+    // No body needed.
+    // Declarations
+    CURL *ehndl;
+    FILE *file;
+    CURLcode res;
+
+    // Initialize an easy curl which takes care most of the things we will need
+    ehndl = curl_easy_init();
+    if (!ehndl) {
+        fprintf(stderr, "Could not initialize curl.\n");
+        return 1;
+    }
+    // TODO: Extract this into a handler constructor function.
+    curl_easy_setopt(ehndl, CURLOPT_URL, host);
+    // Download URLs for Jenkins all redirect
+    curl_easy_setopt(ehndl, CURLOPT_FOLLOWLOCATION, 1L);
+    // But don't allow too many...
+    curl_easy_setopt(ehndl, CURLOPT_MAXREDIRS, 50L);
+    // Don't need the body
+    curl_easy_setopt(ehndl, CURLOPT_NOBODY, 1L);
+
+    // TODO: https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
+
+    res = curl_easy_perform(ehndl);
+    if (res != CURLE_OK) {
+        fclose(file);
+        fprintf(stderr, "curl_easy_perform() failed: %s\n",
+            curl_easy_strerror(res));
+        curl_easy_cleanup(ehndl);
+        return 1;
+    }
+    curl_easy_cleanup(ehndl);
+
     if (v == NULL) {
         fprintf(stderr, "version is empty\n");
         return 1;
