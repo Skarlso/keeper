@@ -1,1 +1,4 @@
 keeper
+*.o
+test/
+*.war

@@ -2,25 +2,37 @@
 #include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <stdbool.h>
 #include "keeper.h"
 
 int get_latest_jenkins_version(char *version)
 {
     // Parse https://updates.jenkins-ci.org/download/war/<version is ordered>/jenkins.war
     // to get the latest version of the war file.
+    return 0;
 }
 
-int get_local_jenkins_version(char *version, const char *token, const char *host)
-{
-    // Jenkins version is in the response header called X-Jenkins:
-    // X-Jenkins: 2.118
-    // http://localhost:8080/api/json
-    char v[] = {0};
+struct jenkins_headers {
+  char value[20];
+};
 
-    // No body needed.
+size_t header_callback(char *buffer, size_t size,
+                              size_t nitems, void *userdata)
+{
+    /* received header is nitems * size long in 'buffer' NOT ZERO TERMINATED */
+    /* 'userdata' is set with CURLOPT_HEADERDATA */
+    size_t numbytes = size * nitems;
+    struct jenkins_headers *jh = (struct jenkins_headers *)userdata;
+    if (strstr(buffer, "X-Jenkins:") != NULL) {
+        sscanf(buffer, "X-Jenkins: %s", jh->value);
+    }
+    return numbytes;
+}
+
+int get_local_jenkins_version(char *version, const char *token)
+{
     // Declarations
     CURL *ehndl;
-    FILE *file;
     CURLcode res;
 
     // Initialize an easy curl which takes care most of the things we will need
@@ -30,19 +42,16 @@ int get_local_jenkins_version(char *version, const char *token, const char *host
         return 1;
     }
     // TODO: Extract this into a handler constructor function.
-    curl_easy_setopt(ehndl, CURLOPT_URL, host);
-    // Download URLs for Jenkins all redirect
-    curl_easy_setopt(ehndl, CURLOPT_FOLLOWLOCATION, 1L);
-    // But don't allow too many...
-    curl_easy_setopt(ehndl, CURLOPT_MAXREDIRS, 50L);
+    curl_easy_setopt(ehndl, CURLOPT_URL, KEEPER_JENKINS_HOST);
     // Don't need the body
     curl_easy_setopt(ehndl, CURLOPT_NOBODY, 1L);
 
-    // TODO: https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
+    struct jenkins_headers jh = {""};
+    curl_easy_setopt(ehndl, CURLOPT_HEADERFUNCTION, header_callback);
+    curl_easy_setopt(ehndl, CURLOPT_HEADERDATA, &jh);
 
     res = curl_easy_perform(ehndl);
     if (res != CURLE_OK) {
-        fclose(file);
         fprintf(stderr, "curl_easy_perform() failed: %s\n",
             curl_easy_strerror(res));
         curl_easy_cleanup(ehndl);
@@ -50,12 +59,12 @@ int get_local_jenkins_version(char *version, const char *token, const char *host
     }
     curl_easy_cleanup(ehndl);
 
-    if (v == NULL) {
+    if (strlen(jh.value) == 0) {
         fprintf(stderr, "version is empty\n");
         return 1;
     }
 
-    strncpy(version, v, sizeof(v));
+    strncpy(version, jh.value, sizeof(jh.value));
     return 0;
 }
 
@@ -110,13 +119,18 @@ int download_jenkins_war()
 
 // Takes the newly downloaded war file and puts it into the right location
 // defined by the environment property KEEPER_JENKINS_WAR_PATH
-int update_jenkins(const char *path)
+int update_jenkins(const char *path, bool update_needed)
 {
     printf("got path %s for jenkins war file.\n", path);
     return 0;
 }
 
-int safe_shutdown_jenkins(const char *host)
+int safe_shutdown_jenkins(bool update_needed)
 {
     return 0;
+}
+
+int compare_versions(const char *v1, const char *v2)
+{
+    return -1;
 }
