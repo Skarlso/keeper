@@ -9,6 +9,8 @@ int get_latest_jenkins_version(char *version)
 {
     // Parse https://updates.jenkins-ci.org/download/war/<version is ordered>/jenkins.war
     // to get the latest version of the war file.
+
+
     return 0;
 }
 
@@ -122,15 +124,16 @@ int download_jenkins_war()
 int update_jenkins(const char *path, bool update_needed)
 {
     printf("got path %s for jenkins war file.\n", path);
+    if (!update_needed)
+        return 0;
+
     return 0;
 }
 
 int safe_shutdown_jenkins(bool update_needed)
 {
-    return 0;
-}
+    if (!update_needed)
+        return 0;
 
-int compare_versions(const char *v1, const char *v2)
-{
-    return -1;
+    return 0;
 }

@@ -1,4 +1,5 @@
 #include "keeper.h"
+#include "version.h"
 #include <stdlib.h>
 #include <curl/curl.h>
 #include <string.h>
@@ -35,8 +36,9 @@ int main()
 
     bool update_needed = false;
     int res = compare_versions(local_jenkins_version, latest_jenkins_version);
-    if (res < 0)
+    if (res == -1)
         update_needed = true;
+
     // Update the war file
     KEEPER_STEP("updating the jenkins war file", *update_jenkins, path, update_needed);
 
