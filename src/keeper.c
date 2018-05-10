@@ -14,8 +14,8 @@ size_t version_write_callback(char *ptr, size_t size, size_t nmemb, void *userda
     size_t numbytes = size * nmemb;
     struct jenkins_version *jv = (struct jenkins_version *)userdata;
     char *loc = strstr(ptr, "/download/war/");
-    loc += strlen("/download/war/");
     if (loc != NULL && strlen(jv->value) == 0) {
+        loc += strlen("/download/war/");
         char *end = strstr(loc, "/jenkins");
         memcpy(jv->value, loc, end - loc);
     }
