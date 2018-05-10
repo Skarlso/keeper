@@ -4,6 +4,8 @@
 #include <curl/curl.h>
 #include <stdbool.h>
 #include "keeper.h"
+#include <fcntl.h>
+#include <unistd.h>
 
 struct jenkins_version {
   char value[20];
@@ -24,10 +26,6 @@ size_t version_write_callback(char *ptr, size_t size, size_t nmemb, void *userda
 
 int get_latest_jenkins_version(char *version)
 {
-    // sscanf ( '/download/war/%s/jenkins.war' )
-    // Parse https://updates.jenkins-ci.org/download/war/<version is ordered>/jenkins.war
-    // to get the latest version of the war file.
-    // Declarations
     CURL *ehndl;
     CURLcode res;
 
@@ -65,19 +63,15 @@ int get_latest_jenkins_version(char *version)
     return 0;
 }
 
-struct jenkins_headers {
-  char value[20];
-};
-
 size_t header_callback(char *buffer, size_t size,
                               size_t nitems, void *userdata)
 {
     /* received header is nitems * size long in 'buffer' NOT ZERO TERMINATED */
     /* 'userdata' is set with CURLOPT_HEADERDATA */
     size_t numbytes = size * nitems;
-    struct jenkins_headers *jh = (struct jenkins_headers *)userdata;
+    struct jenkins_version *jv = (struct jenkins_version *)userdata;
     if (strstr(buffer, "X-Jenkins:") != NULL) {
-        sscanf(buffer, "X-Jenkins: %s", jh->value);
+        sscanf(buffer, "X-Jenkins: %s", jv->value);
     }
     return numbytes;
 }
@@ -99,9 +93,9 @@ int get_local_jenkins_version(char *version, const char *token)
     // Don't need the body
     curl_easy_setopt(ehndl, CURLOPT_NOBODY, 1L);
 
-    struct jenkins_headers jh = {""};
+    struct jenkins_version jv = {""};
     curl_easy_setopt(ehndl, CURLOPT_HEADERFUNCTION, header_callback);
-    curl_easy_setopt(ehndl, CURLOPT_HEADERDATA, &jh);
+    curl_easy_setopt(ehndl, CURLOPT_HEADERDATA, &jv);
 
     res = curl_easy_perform(ehndl);
     if (res != CURLE_OK) {
@@ -112,12 +106,12 @@ int get_local_jenkins_version(char *version, const char *token)
     }
     curl_easy_cleanup(ehndl);
 
-    if (strlen(jh.value) == 0) {
+    if (strlen(jv.value) == 0) {
         fprintf(stderr, "version is empty\n");
         return 1;
     }
 
-    strncpy(version, jh.value, sizeof(jh.value));
+    strncpy(version, jv.value, sizeof(jv.value));
     return 0;
 }
 
@@ -172,19 +166,81 @@ int download_jenkins_war()
 
 // Takes the newly downloaded war file and puts it into the right location
 // defined by the environment property KEEPER_JENKINS_WAR_PATH
-int update_jenkins(const char *path, bool update_needed)
+int update_jenkins(const char *path)
 {
     printf("got path %s for jenkins war file.\n", path);
-    if (!update_needed)
-        return 0;
+
+    int src_fd, dst_fd, n, err;
+    int buffer_size = 4096;
+    unsigned char buffer[buffer_size];
+
+    src_fd = open("jenkins.war", O_RDONLY);
+    dst_fd = open(path, O_CREAT | O_WRONLY, 0666);
+
+    while (1) {
+        err = read(src_fd, buffer, buffer_size);
+        if (err == -1) {
+            printf("error reading source file.\n");
+            return 1;
+        }
+        n = err;
+
+        if (n == 0) break;
+
+        err = write(dst_fd, buffer, n);
+        if (err == -1) {
+            printf("error writing to destination file under '%s'.\n", path);
+            return 1;
+        }
+    }
+
+    printf("successfully copied jenkins.war\n");
+    close(src_fd);
+    close(dst_fd);
 
     return 0;
 }
 
-int safe_shutdown_jenkins(bool update_needed)
+int safe_shutdown_jenkins(const char *token)
 {
-    if (!update_needed)
-        return 0;
+    CURL *ehndl;
+    CURLcode res;
 
+    // Initialize an easy curl which takes care most of the things we will need
+    ehndl = curl_easy_init();
+    if (!ehndl) {
+        fprintf(stderr, "Could not initialize curl.\n");
+        return 1;
+    }
+    curl_easy_setopt(ehndl, CURLOPT_URL, KEEPER_JENKINS_EXIT_URL);
+    curl_easy_setopt(ehndl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    curl_easy_setopt(ehndl, CURLOPT_USERPWD, token);
+    curl_easy_setopt(ehndl, CURLOPT_POST, 1L);
+    res = curl_easy_perform(ehndl);
+    if (res != CURLE_OK) {
+        fprintf(stderr, "curl_easy_perform() failed: %s\n",
+            curl_easy_strerror(res));
+        curl_easy_cleanup(ehndl);
+        return 1;
+    }
+
+    printf("continuously checking until Jenkins is unavailable.\n");
+    curl_easy_setopt(ehndl, CURLOPT_URL, KEEPER_JENKINS_HOST);
+    curl_easy_setopt(ehndl, CURLOPT_POST, 0L);
+
+    while ((res = curl_easy_perform(ehndl)) == CURLE_OK) {
+        sleep(2);
+    }
+    printf("jenkins successfully shutdown.\n");
+    curl_easy_cleanup(ehndl);
+    return 0;
+}
+
+int start_jenkins(const char *cmd)
+{
+    if (fork() == 0) {
+        system(cmd);
+        return 0;
+    }
     return 0;
 }
