@@ -22,6 +22,7 @@ int get_local_jenkins_version(char *version, const char *token);
 int get_latest_jenkins_version(char *version);
 size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t header_callback(char *buffer, size_t size, size_t nitems, void *userdata);
+size_t version_write_callback(char *ptr, size_t size, size_t nmemb, void *userdata);
 int download_jenkins_war();
 int update_jenkins(const char *path, bool update_needed);
 int safe_shutdown_jenkins(bool update_needed);

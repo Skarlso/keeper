@@ -26,24 +26,24 @@ int main()
     KEEPER_STEP("get latest jenkins version", *get_latest_jenkins_version, &latest_jenkins_version[0]);
     printf("got latest jenkins version: %s\n", latest_jenkins_version);
 
-    char local_jenkins_version[20];
-    // In order to modify this variable we pass in the address of the first element of this array
-    KEEPER_STEP("get local jenkins version", *get_local_jenkins_version, &local_jenkins_version[0], token);
-    printf("got local version: %s\n", local_jenkins_version);
+    // char local_jenkins_version[20];
+    // // In order to modify this variable we pass in the address of the first element of this array
+    // KEEPER_STEP("get local jenkins version", *get_local_jenkins_version, &local_jenkins_version[0], token);
+    // printf("got local version: %s\n", local_jenkins_version);
 
-    // Download the latest file
-    // KEEPER_STEP("download latest jenkins war", *download_jenkins_war);
+    // // Download the latest file
+    // // KEEPER_STEP("download latest jenkins war", *download_jenkins_war);
 
-    bool update_needed = false;
-    int res = compare_versions(local_jenkins_version, latest_jenkins_version);
-    if (res == -1)
-        update_needed = true;
+    // bool update_needed = false;
+    // int res = compare_versions(local_jenkins_version, latest_jenkins_version);
+    // if (res == -1)
+    //     update_needed = true;
 
-    // Update the war file
-    KEEPER_STEP("updating the jenkins war file", *update_jenkins, path, update_needed);
+    // // Update the war file
+    // KEEPER_STEP("updating the jenkins war file", *update_jenkins, path, update_needed);
 
-    // Initiate safe shutdown
-    KEEPER_STEP("safe shutdown Jenkins", *safe_shutdown_jenkins, update_needed);
+    // // Initiate safe shutdown
+    // KEEPER_STEP("safe shutdown Jenkins", *safe_shutdown_jenkins, update_needed);
 
     curl_global_cleanup();
     return 0;

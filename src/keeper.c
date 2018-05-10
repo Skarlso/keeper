@@ -5,12 +5,61 @@
 #include <stdbool.h>
 #include "keeper.h"
 
+struct jenkins_version {
+  char value[20];
+};
+
+size_t version_write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+    size_t numbytes = size * nmemb;
+    struct jenkins_version *jv = (struct jenkins_version *)userdata;
+    if (strstr(ptr, "/download/war/") != NULL && strlen(jv->value) == 0) {
+        sscanf(ptr, "download/war/%s", jv->value);
+        printf("jv -> %s\n", jv->value);
+    }
+    return numbytes;
+}
+
 int get_latest_jenkins_version(char *version)
 {
+    // sscanf ( '/download/war/%s/jenkins.war' )
     // Parse https://updates.jenkins-ci.org/download/war/<version is ordered>/jenkins.war
     // to get the latest version of the war file.
+    // Declarations
+    CURL *ehndl;
+    CURLcode res;
 
+    // Initialize an easy curl which takes care most of the things we will need
+    ehndl = curl_easy_init();
+    if (!ehndl) {
+        fprintf(stderr, "Could not initialize curl.\n");
+        return 1;
+    }
+    printf("getting latest version number: %s\n", JENKINS_WAR_VERSION_URL);
+    curl_easy_setopt(ehndl, CURLOPT_URL, JENKINS_WAR_VERSION_URL);
+    // Download URLs for Jenkins all redirect
+    curl_easy_setopt(ehndl, CURLOPT_FOLLOWLOCATION, 1L);
+    // But don't allow too many...
+    curl_easy_setopt(ehndl, CURLOPT_MAXREDIRS, 50L);
+    curl_easy_setopt(ehndl, CURLOPT_BUFFERSIZE, 1024L);
 
+    struct jenkins_version jv = {""};
+    // Setup the file to which we will write to
+    curl_easy_setopt(ehndl, CURLOPT_WRITEFUNCTION, version_write_callback);
+    curl_easy_setopt(ehndl, CURLOPT_WRITEDATA, &jv);
+
+    // Progress information
+    curl_easy_setopt(ehndl, CURLOPT_NOPROGRESS, 1L);
+
+    res = curl_easy_perform(ehndl);
+    if (res != CURLE_OK) {
+        fprintf(stderr, "curl_easy_perform() failed: %s\n",
+            curl_easy_strerror(res));
+        curl_easy_cleanup(ehndl);
+        return 1;
+    }
+    curl_easy_cleanup(ehndl);
+    strncpy(version, jv.value, sizeof(jv.value));
     return 0;
 }
 
