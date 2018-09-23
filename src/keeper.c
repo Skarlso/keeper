@@ -19,7 +19,9 @@ size_t version_write_callback(char *ptr, size_t size, size_t nmemb, void *userda
     if (loc != NULL && strlen(jv->value) == 0) {
         loc += strlen("/download/war/");
         char *end = strstr(loc, "/jenkins");
-        memcpy(jv->value, loc, end - loc);
+        if ((end - loc) < 20) {
+            memcpy(jv->value, loc, end - loc);
+        }
     }
     return numbytes;
 }

@@ -2,3 +2,7 @@ keeper
 *.o
 test/
 *.war.DS_Store
+.DS_Store
+.vscode
+jenkins.war
+tags
